@@ -1,0 +1,278 @@
+package com.bbingju.mymemo;
+
+import android.app.Activity;
+import android.content.Context;
+import android.content.Intent;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
+import android.os.Bundle;
+import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.LinearLayout;
+import android.widget.ListView;
+import android.widget.TextView;
+import android.widget.Toast;
+
+import com.parse.FindCallback;
+import com.parse.ParseAnalytics;
+import com.parse.ParseAnonymousUtils;
+import com.parse.ParseException;
+import com.parse.ParseObject;
+import com.parse.ParseQuery;
+import com.parse.ParseQueryAdapter;
+import com.parse.ParseUser;
+import com.parse.SaveCallback;
+
+import java.util.List;
+
+public class ListMemoActivity extends Activity {
+
+    private static final int LOGIN_ACTIVITY_CODE = 100;
+    private static final int EDIT_ACTIVITY_CODE = 200;
+
+    private LayoutInflater inflater;
+    private ParseQueryAdapter<Memo> memoListAdapter;
+
+    private ListView memoListView;
+    private LinearLayout noMemosView;
+    private TextView loggedInInfoView;
+
+    /**
+     * Called when the activity is first created.
+     */
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_memo_list);
+
+        noMemosView = (LinearLayout) findViewById(R.id.no_memos_view);
+        memoListView = (ListView) findViewById(R.id.memo_list_view);
+        memoListView.setEmptyView(noMemosView);
+        loggedInInfoView = (TextView) findViewById(R.id.loggedin_info);
+
+        ParseQueryAdapter.QueryFactory<Memo> factory = new ParseQueryAdapter.QueryFactory<Memo>() {
+            public ParseQuery<Memo> create() {
+                ParseQuery<Memo> query = Memo.getQuery();
+                query.orderByDescending("createdAt");
+                query.fromLocalDatastore();
+                return query;
+            }
+        };
+
+        // Set up the adapter
+        inflater = (LayoutInflater) this.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        memoListAdapter = new MemoListAdapter(this, factory);
+
+        ListView memoListView = (ListView) findViewById(R.id.memo_list_view);
+        memoListView.setAdapter(memoListAdapter);
+
+        memoListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                Memo memo = memoListAdapter.getItem(position);
+                openEditView(memo);
+            }
+        });
+
+        ParseAnalytics.trackAppOpenedInBackground(getIntent());
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (!ParseAnonymousUtils.isLinked(ParseUser.getCurrentUser())) {
+            syncMemosToParse();
+            updateLoggedInfo();
+        }
+    }
+
+    private void updateLoggedInfo() {
+        if (!ParseAnonymousUtils.isLinked(ParseUser.getCurrentUser())) {
+            ParseUser currentUser = ParseUser.getCurrentUser();
+            loggedInInfoView.setText(getString(R.string.logged_in, currentUser.getString("name")));
+        } else {
+            loggedInInfoView.setText(getString(R.string.not_logged_in));
+        }
+    }
+
+    private void openEditView(Memo memo) {
+        Intent i = new Intent(this, EditMemoActivity.class);
+        i.putExtra("ID", memo.getUuidString());
+        startActivityForResult(i, EDIT_ACTIVITY_CODE);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if (resultCode == RESULT_OK) {
+            if (requestCode == EDIT_ACTIVITY_CODE) {
+                memoListAdapter.loadObjects();
+            } else if (requestCode == LOGIN_ACTIVITY_CODE) {
+                if (ParseUser.getCurrentUser().isNew()) {
+                    syncMemosToParse();
+                } else {
+                    loadFromParse();
+                }
+            }
+        }
+    }
+
+    private void loadFromParse() {
+        ParseQuery<Memo> query = Memo.getQuery();
+        query.whereEqualTo("author", ParseUser.getCurrentUser());
+        query.findInBackground(new FindCallback<Memo>() {
+                                   @Override
+                                   public void done(List<Memo> list, ParseException e) {
+                                       if (e == null) {
+                                           ParseObject.pinAllInBackground(list,
+                                                   new SaveCallback() {
+                                                       @Override
+                                                       public void done(ParseException e) {
+                                                           if (e == null) {
+                                                               if (!isFinishing()) {
+                                                                   memoListAdapter.loadObjects();
+                                                               } else {
+                                                                   Log.i("ListMemoActivity",
+                                                                           "Error pinning memos: " +
+                                                                                   e.getMessage());
+                                                               }
+                                                           }
+                                                       }
+                                                   });
+                                       }
+                                   }
+                               }
+        );
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.menu_list_memo, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        // Handle action bar item clicks here. The action bar will
+        // automatically handle clicks on the Home/Up button, so long
+        // as you specify a parent activity in AndroidManifest.xml.
+        int id = item.getItemId();
+
+        //noinspection SimplifiableIfStatement
+        if (id == R.id.action_settings) {
+            return true;
+        }
+
+        if (id == R.id.action_new) {
+            if (ParseUser.getCurrentUser() != null) {
+                startActivityForResult(new Intent(this, EditMemoActivity.class), EDIT_ACTIVITY_CODE);
+            }
+        }
+
+        if (id == R.id.action_sync) {
+            syncMemosToParse();
+        }
+
+        if (id == R.id.action_login) {
+
+        }
+
+        if (id == R.id.action_logout) {
+
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        super.onPrepareOptionsMenu(menu);
+        boolean realUser = !ParseAnonymousUtils.isLinked(ParseUser.getCurrentUser());
+        menu.findItem(R.id.action_login).setVisible(!realUser);
+        menu.findItem(R.id.action_logout).setVisible(realUser);
+        return true;
+    }
+
+    private void syncMemosToParse() {
+        ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo ni = cm.getActiveNetworkInfo();
+        if (ni != null && ni.isConnected()) {
+            if (!ParseAnonymousUtils.isLinked(ParseUser.getCurrentUser())) {
+                ParseQuery<Memo> query = Memo.getQuery();
+                query.fromPin(MemoApplication.MEMO_GROUP_NAME);
+                query.whereEqualTo("isDraft", true);
+                query.findInBackground(new FindCallback<Memo>() {
+                    @Override
+                    public void done(List<Memo> list, ParseException e) {
+                        if (e == null) {
+                            for (final Memo memo : list) {
+                                memo.setDraft(false);
+                                memo.saveInBackground(new SaveCallback() {
+                                                          @Override
+                                                          public void done(ParseException e) {
+                                                              if (e == null) {
+                                                                  if (!isFinishing()) {
+                                                                      memoListAdapter.notifyDataSetChanged();
+                                                                  }
+                                                              } else {
+                                                                  memo.setDraft(true);
+                                                              }
+                                                          }
+                                                      }
+                                );
+                            }
+                        } else {
+                            Log.i("ListMemoActivity",
+                                    "syncMemosToParse: Error finding pinned memos: "
+                                            + e.getMessage());
+                        }
+                    }
+                });
+            } else {
+                // If we have a network connection but no logged in user, direct
+                // the person to log in or sign up.
+            }
+        } else {
+            // If there is no connection, let the user know the sync didn't
+            // happen
+            Toast.makeText(
+                    getApplicationContext(),
+                    "Your device appears to be offline. Some todos may not have been synced to Parse.",
+                    Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private static class ViewHolder {
+        TextView memoTitle;
+    }
+
+    private class MemoListAdapter extends ParseQueryAdapter<Memo> {
+
+        public MemoListAdapter(Context context, ParseQueryAdapter.QueryFactory<Memo> queryFactory) {
+            super(context, queryFactory);
+        }
+
+        @Override
+        public View getItemView(Memo memo, View view, ViewGroup parent) {
+            ViewHolder holder;
+            if (view == null) {
+                view = inflater.inflate(R.layout.list_item_memo, parent, false);
+                holder = new ViewHolder();
+                holder.memoTitle = (TextView) view.findViewById(R.id.memo_title);
+                view.setTag(holder);
+            } else {
+                holder = (ViewHolder) view.getTag();
+            }
+            TextView memoTitle = holder.memoTitle;
+            memoTitle.setText(memo.getTitle());
+            return view;
+        }
+    }
+}
+
