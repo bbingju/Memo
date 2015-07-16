@@ -27,6 +27,7 @@ import com.parse.ParseQuery;
 import com.parse.ParseQueryAdapter;
 import com.parse.ParseUser;
 import com.parse.SaveCallback;
+import com.parse.ui.ParseLoginBuilder;
 
 import java.util.List;
 
@@ -172,7 +173,8 @@ public class ListMemoActivity extends Activity {
 
         if (id == R.id.action_new) {
             if (ParseUser.getCurrentUser() != null) {
-                startActivityForResult(new Intent(this, EditMemoActivity.class), EDIT_ACTIVITY_CODE);
+                startActivityForResult(new Intent(this, EditMemoActivity.class),
+                        EDIT_ACTIVITY_CODE);
             }
         }
 
@@ -181,12 +183,19 @@ public class ListMemoActivity extends Activity {
         }
 
         if (id == R.id.action_login) {
-
+            ParseLoginBuilder builder = new ParseLoginBuilder(this);
+            startActivityForResult(builder.build(), LOGIN_ACTIVITY_CODE);
         }
 
         if (id == R.id.action_logout) {
+            ParseUser.logOut();
+            ParseAnonymousUtils.logIn(null);
 
+            updateLoggedInfo();
+            memoListAdapter.clear();
+            ParseObject.unpinAllInBackground(MemoApplication.MEMO_GROUP_NAME);
         }
+
         return super.onOptionsItemSelected(item);
     }
 
@@ -237,13 +246,15 @@ public class ListMemoActivity extends Activity {
             } else {
                 // If we have a network connection but no logged in user, direct
                 // the person to log in or sign up.
+                ParseLoginBuilder builder = new ParseLoginBuilder(this);
+                startActivityForResult(builder.build(), LOGIN_ACTIVITY_CODE);
             }
         } else {
             // If there is no connection, let the user know the sync didn't
             // happen
             Toast.makeText(
                     getApplicationContext(),
-                    "Your device appears to be offline. Some todos may not have been synced to Parse.",
+                    "Your device appears to be offline. Some memos may not have been synced to Parse.",
                     Toast.LENGTH_LONG).show();
         }
     }

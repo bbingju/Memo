@@ -12,9 +12,19 @@ buildscript {
 }
 
 dependencies {
-    compile 'com.parse.bolts:bolts-android:1.2.0'
-    compile fileTree(dir: 'libs', include: 'Parse-*.jar')
-    compile fileTree(dir: 'libs', include: 'ParseCrashReporting-*.jar')
+    // rootProject.ext.* variables are defined in project gradle file, you can also use path here.
+    compile rootProject.ext.facebookSDK
+    compile project(':ParseLoginUI')
+    compile rootProject.ext.androidSupport
+    compile files(rootProject.ext.parsePath)
+    compile files(rootProject.ext.parseCrushReportPath)
+    compile files(rootProject.ext.parseFacebookUtilsPath)
+
+//    compile 'com.parse.bolts:bolts-android:1.2.0'
+//    compile fileTree(include: 'Parse-*.jar', dir: 'libs')
+//    compile fileTree(include: 'ParseCrashReporting-*.jar', dir: 'libs')
+//    //    compile files('libs/ParseFacebookUtilsV4-1.9.1.jar')
+//    compile project(':ParseLoginUI')
 }
 
 android {

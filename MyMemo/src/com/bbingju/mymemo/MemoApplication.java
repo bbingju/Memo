@@ -25,7 +25,9 @@ public class MemoApplication extends Application {
         Parse.enableLocalDatastore(this);
 
         // Add your initialization code here
-        Parse.initialize(this, "YOUR_APP_ID", "YOUR_CLIENT_ID");
+        Parse.initialize(this,
+                "W8byMB6pZqbWaiC0WlyVcIPOWBSeDTG48grCzJMo",
+                "NMa4pYUmY1R33W82RKFmXtHnWGQTyIpUOT9cUbyu");
 
         ParseUser.enableAutomaticUser();
         ParseACL defaultACL = new ParseACL();

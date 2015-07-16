@@ -4,8 +4,9 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:1.2.3'
-        classpath 'com.jakewharton.sdkmanager:gradle-plugin:0.12.+'
+        classpath 'com.android.tools.build:gradle:1.0.0'
+//        classpath 'com.android.tools.build:gradle:1.2.3'
+//        classpath 'com.jakewharton.sdkmanager:gradle-plugin:0.12.+'
     }
 }
 
@@ -16,9 +17,16 @@ allprojects {
 }
 
 ext {
-    compileSdkVersion = 22
-    buildToolsVersion = "22"
+    compileSdkVersion = 21
+    buildToolsVersion = "21.1.1"
 
     minSdkVersion = 9
-    targetSdkVersion = 22
+    targetSdkVersion = 21
+
+    facebookSDK = 'com.facebook.android:facebook-android-sdk:4.0.1'
+    androidSupport = 'com.android.support:support-v4:22.0.0'
+    bolts = 'com.parse.bolts:bolts-android:1.2.0'
+    parsePath = "$rootProject.projectDir/MyMemo/libs/Parse-1.9.3.jar"
+    parseCrushReportPath = "$rootProject.projectDir/MyMemo/libs/ParseCrashReporting-1.9.3.jar"
+    parseFacebookUtilsPath = "$rootProject.projectDir/MyMemo/libs/ParseFacebookUtilsV4-1.9.3.jar"
 }

@@ -1,1 +1,4 @@
-include ':MyMemo'
+rootProject.name = 'Memo'
+
+include ':MyMemo', ':ParseLoginUI'
+
