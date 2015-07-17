@@ -1,3 +1,11 @@
+# Android
+# built application files
+*.apk
+*.ap_
+
+# Java class files
+*.class
+
 # Eclipse
 .project
 .metadata
@@ -31,7 +39,9 @@ local.properties
  
 # Gradle generated files
 .gradle/
+gradle/
 build
+gradlew*
  
 # Signing files
 .signing/
@@ -47,17 +57,3 @@ Thumbs.db
 
 # Locally stored "Eclipse launch configurations"
 *.launch
-
-# Android
-# built application files
-*.apk
-*.ap_
-
-# Java class files
-*.class
-
-# Local configuration file (sdk path, etc)
-local.properties
-
-# Other
-.DS_Store
