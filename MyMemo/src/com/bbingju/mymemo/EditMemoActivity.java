@@ -63,6 +63,7 @@ public class EditMemoActivity extends Activity {
             public void onClick(View v) {
                 memo.setTitle(memoText.getText().toString());
                 memo.setAuthor(ParseUser.getCurrentUser());
+                memo.setDraft(true);
                 memo.pinInBackground(MemoApplication.MEMO_GROUP_NAME, new SaveCallback() {
                     @Override
                     public void done(ParseException e) {
