@@ -1,32 +1,27 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     tools:context="com.parse.starter.ListMemoActivity">
-    <item
-        android:id="@+id/action_settings"
-        android:orderInCategory="100"
-        android:showAsAction="never"
-        android:title="@string/action_settings" />
 
     <item
         android:id="@+id/action_new"
         android:icon="@android:drawable/ic_menu_add"
         android:showAsAction="ifRoom"
-        android:title="@string/action_new"></item>
+        android:title="@string/action_new"/>
 
     <item
         android:id="@+id/action_sync"
         android:icon="@android:drawable/ic_menu_save"
         android:showAsAction="ifRoom"
-        android:title="@string/action_sync"></item>
+        android:title="@string/action_sync"/>
 
     <item
         android:id="@+id/action_logout"
         android:showAsAction="never"
-        android:title="@string/action_logout"></item>
+        android:title="@string/action_logout"/>
 
     <item
         android:id="@+id/action_login"
         android:showAsAction="never"
-        android:title="@string/action_login"></item>
+        android:title="@string/action_login"/>
 
 </menu>

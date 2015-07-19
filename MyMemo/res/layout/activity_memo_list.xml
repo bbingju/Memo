@@ -19,7 +19,7 @@
         android:id="@+id/memo_list_view"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_below="@id/loggedin_info"></ListView>
+        android:layout_below="@id/loggedin_info"/>
 
     <LinearLayout
         android:id="@+id/no_memos_view"

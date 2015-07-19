@@ -33,8 +33,8 @@ import java.util.List;
 
 public class ListMemoActivity extends Activity {
 
-    private static final int LOGIN_ACTIVITY_CODE = 100;
-    private static final int EDIT_ACTIVITY_CODE = 200;
+    private static final int LOGIN_REQUEST_CODE = 100;
+    private static final int EDIT_REQUEST_CODE = 200;
 
     private LayoutInflater inflater;
     private ParseQueryAdapter<Memo> memoListAdapter;
@@ -42,6 +42,8 @@ public class ListMemoActivity extends Activity {
     private ListView memoListView;
     private LinearLayout noMemosView;
     private TextView loggedInInfoView;
+
+    private ParseUser currentUser;
 
     /**
      * Called when the activity is first created.
@@ -84,16 +86,26 @@ public class ListMemoActivity extends Activity {
     }
 
     @Override
+    protected void onStart() {
+        super.onStart();
+
+        currentUser = ParseUser.getCurrentUser();
+    }
+
+    @Override
     protected void onResume() {
         super.onResume();
-        if (!ParseAnonymousUtils.isLinked(ParseUser.getCurrentUser())) {
+
+        currentUser = ParseUser.getCurrentUser();
+
+        if (!ParseAnonymousUtils.isLinked(currentUser)) {
             syncMemosToParse();
             updateLoggedInfo();
         }
     }
 
     private void updateLoggedInfo() {
-        if (!ParseAnonymousUtils.isLinked(ParseUser.getCurrentUser())) {
+        if (!ParseAnonymousUtils.isLinked(currentUser)) {
             ParseUser currentUser = ParseUser.getCurrentUser();
             loggedInInfoView.setText(getString(R.string.logged_in, currentUser.getString("name")));
         } else {
@@ -104,7 +116,7 @@ public class ListMemoActivity extends Activity {
     private void openEditView(Memo memo) {
         Intent i = new Intent(this, EditMemoActivity.class);
         i.putExtra("ID", memo.getUuidString());
-        startActivityForResult(i, EDIT_ACTIVITY_CODE);
+        startActivityForResult(i, EDIT_REQUEST_CODE);
     }
 
     @Override
@@ -112,10 +124,11 @@ public class ListMemoActivity extends Activity {
         super.onActivityResult(requestCode, resultCode, data);
 
         if (resultCode == RESULT_OK) {
-            if (requestCode == EDIT_ACTIVITY_CODE) {
+            if (requestCode == EDIT_REQUEST_CODE) {
                 memoListAdapter.loadObjects();
-            } else if (requestCode == LOGIN_ACTIVITY_CODE) {
-                if (ParseUser.getCurrentUser().isNew()) {
+            } else if (requestCode == LOGIN_REQUEST_CODE) {
+                currentUser = ParseUser.getCurrentUser();
+                if (currentUser.isNew()) {
                     syncMemosToParse();
                 } else {
                     loadFromParse();
@@ -126,7 +139,7 @@ public class ListMemoActivity extends Activity {
 
     private void loadFromParse() {
         ParseQuery<Memo> query = Memo.getQuery();
-        query.whereEqualTo("author", ParseUser.getCurrentUser());
+        query.whereEqualTo("author", currentUser);
         query.findInBackground(new FindCallback<Memo>() {
                                    @Override
                                    public void done(List<Memo> list, ParseException e) {
@@ -166,15 +179,10 @@ public class ListMemoActivity extends Activity {
         // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
 
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
-        }
-
         if (id == R.id.action_new) {
-            if (ParseUser.getCurrentUser() != null) {
+            if (currentUser != null) {
                 startActivityForResult(new Intent(this, EditMemoActivity.class),
-                        EDIT_ACTIVITY_CODE);
+                        EDIT_REQUEST_CODE);
             }
         }
 
@@ -184,7 +192,7 @@ public class ListMemoActivity extends Activity {
 
         if (id == R.id.action_login) {
             ParseLoginBuilder builder = new ParseLoginBuilder(this);
-            startActivityForResult(builder.build(), LOGIN_ACTIVITY_CODE);
+            startActivityForResult(builder.build(), LOGIN_REQUEST_CODE);
         }
 
         if (id == R.id.action_logout) {
@@ -211,51 +219,50 @@ public class ListMemoActivity extends Activity {
     private void syncMemosToParse() {
         ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo ni = cm.getActiveNetworkInfo();
-        if (ni != null && ni.isConnected()) {
-            if (!ParseAnonymousUtils.isLinked(ParseUser.getCurrentUser())) {
+        if ((ni != null) && (ni.isConnected())) {
+            if (!ParseAnonymousUtils.isLinked(currentUser)) {
                 ParseQuery<Memo> query = Memo.getQuery();
                 query.fromPin(MemoApplication.MEMO_GROUP_NAME);
                 query.whereEqualTo("isDraft", true);
                 query.findInBackground(new FindCallback<Memo>() {
-                    @Override
-                    public void done(List<Memo> list, ParseException e) {
-                        if (e == null) {
-                            for (final Memo memo : list) {
-                                memo.setDraft(false);
-                                memo.saveInBackground(new SaveCallback() {
-                                                          @Override
-                                                          public void done(ParseException e) {
-                                                              if (e == null) {
-                                                                  if (!isFinishing()) {
-                                                                      memoListAdapter.notifyDataSetChanged();
-                                                                  }
-                                                              } else {
-                                                                  memo.setDraft(true);
-                                                              }
-                                                          }
-                                                      }
-                                );
+                        @Override
+                            public void done(List<Memo> list, ParseException e) {
+                            if (e == null) {
+                                for (final Memo memo : list) {
+                                    memo.setDraft(false);
+                                    memo.saveInBackground(new SaveCallback() {
+                                            @Override
+                                            public void done(ParseException e) {
+                                                if (e == null) {
+                                                    if (!isFinishing()) {
+                                                        memoListAdapter.notifyDataSetChanged();
+                                                    }
+                                                } else {
+                                                    memo.setDraft(true);
+                                                }
+                                            }
+                                        });
+                                }
+                            } else {
+                                Log.i("ListMemoActivity",
+                                      "syncMemosToParse: Error finding pinned memos: "
+                                      + e.getMessage());
                             }
-                        } else {
-                            Log.i("ListMemoActivity",
-                                    "syncMemosToParse: Error finding pinned memos: "
-                                            + e.getMessage());
                         }
-                    }
-                });
+                    });
             } else {
                 // If we have a network connection but no logged in user, direct
                 // the person to log in or sign up.
                 ParseLoginBuilder builder = new ParseLoginBuilder(this);
-                startActivityForResult(builder.build(), LOGIN_ACTIVITY_CODE);
+                startActivityForResult(builder.build(), LOGIN_REQUEST_CODE);
             }
         } else {
             // If there is no connection, let the user know the sync didn't
             // happen
             Toast.makeText(
-                    getApplicationContext(),
-                    "Your device appears to be offline. Some memos may not have been synced to Parse.",
-                    Toast.LENGTH_LONG).show();
+                           getApplicationContext(),
+                           "Your device appears to be offline. Some memos may not have been synced to Parse.",
+                           Toast.LENGTH_LONG).show();
         }
     }
 
@@ -286,4 +293,3 @@ public class ListMemoActivity extends Activity {
         }
     }
 }
-

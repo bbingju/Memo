@@ -13,20 +13,20 @@
 
     <EditText
         android:id="@+id/memo_text"
-        android:layout_width="fill_parent"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_weight="1"
         android:paddingTop="30dp"></EditText>
 
     <Button
         android:id="@+id/saveButton"
-        android:layout_width="fill_parent"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="@string/save" />
 
     <Button
         android:id="@+id/deleteButton"
-        android:layout_width="fill_parent"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="@string/delete"
         android:visibility="invisible" />
