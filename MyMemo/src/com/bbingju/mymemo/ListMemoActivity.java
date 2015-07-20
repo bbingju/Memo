@@ -1,6 +1,7 @@
 package com.bbingju.mymemo;
 
 import android.app.Activity;
+import android.app.ListActivity;
 import android.content.Context;
 import android.content.Intent;
 import android.net.ConnectivityManager;
@@ -18,6 +19,7 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.facebook.appevents.AppEventsLogger;
 import com.parse.FindCallback;
 import com.parse.ParseAnalytics;
 import com.parse.ParseAnonymousUtils;
@@ -96,6 +98,9 @@ public class ListMemoActivity extends Activity {
     protected void onResume() {
         super.onResume();
 
+        // Logs 'install' and 'app activate' App Events.
+        AppEventsLogger.activateApp(this);
+
         currentUser = ParseUser.getCurrentUser();
 
         if (!ParseAnonymousUtils.isLinked(currentUser)) {
@@ -104,9 +109,16 @@ public class ListMemoActivity extends Activity {
         }
     }
 
+    @Override
+    protected void onPause() {
+        super.onPause();
+
+        // Logs 'app deactivate' App Event.
+        AppEventsLogger.deactivateApp(this);
+    }
+
     private void updateLoggedInfo() {
         if (!ParseAnonymousUtils.isLinked(currentUser)) {
-            ParseUser currentUser = ParseUser.getCurrentUser();
             loggedInInfoView.setText(getString(R.string.logged_in, currentUser.getString("name")));
         } else {
             loggedInInfoView.setText(getString(R.string.not_logged_in));
@@ -198,6 +210,7 @@ public class ListMemoActivity extends Activity {
         if (id == R.id.action_logout) {
             ParseUser.logOut();
             ParseAnonymousUtils.logIn(null);
+            currentUser = ParseUser.getCurrentUser();
 
             updateLoggedInfo();
             memoListAdapter.clear();
@@ -267,7 +280,7 @@ public class ListMemoActivity extends Activity {
     }
 
     private static class ViewHolder {
-        TextView memoTitle;
+        TextView memoText;
     }
 
     private class MemoListAdapter extends ParseQueryAdapter<Memo> {
@@ -282,13 +295,13 @@ public class ListMemoActivity extends Activity {
             if (view == null) {
                 view = inflater.inflate(R.layout.list_item_memo, parent, false);
                 holder = new ViewHolder();
-                holder.memoTitle = (TextView) view.findViewById(R.id.memo_title);
+                holder.memoText = (TextView) view.findViewById(R.id.memo_content);
                 view.setTag(holder);
             } else {
                 holder = (ViewHolder) view.getTag();
             }
-            TextView memoTitle = holder.memoTitle;
-            memoTitle.setText(memo.getTitle());
+            TextView content = holder.memoText;
+            content.setText(memo.getMemo());
             return view;
         }
     }

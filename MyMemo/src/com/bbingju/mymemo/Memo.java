@@ -17,14 +17,6 @@ public class Memo extends ParseObject {
         return ParseQuery.getQuery(Memo.class);
     }
 
-    public String getTitle() {
-        return getString("title");
-    }
-
-    public void setTitle(String title) {
-        put("title", title);
-    }
-
     public boolean isDraft() {
         return getBoolean("isDraft");
     }
@@ -41,12 +33,12 @@ public class Memo extends ParseObject {
         put("author", author);
     }
 
-    public String getContent() {
-        return getString("content");
+    public String getMemo() {
+        return getString("memo");
     }
 
-    public void setContent(String content) {
-        put("content", content);
+    public void setMemo(String memo) {
+        put("memo", memo);
     }
 
     public String getUuidString() {

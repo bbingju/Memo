@@ -51,7 +51,7 @@ public class EditMemoActivity extends Activity {
                 public void done(Memo object, ParseException e) {
                     if (!isFinishing()) {
                         memo = object;
-                        memoText.setText(memo.getTitle());
+                        memoText.setText(memo.getMemo());
                         deleteButton.setVisibility(View.VISIBLE);
                     }
                 }
@@ -61,7 +61,7 @@ public class EditMemoActivity extends Activity {
         saveButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                memo.setTitle(memoText.getText().toString());
+                memo.setMemo(memoText.getText().toString());
                 memo.setAuthor(ParseUser.getCurrentUser());
                 memo.setDraft(true);
                 memo.pinInBackground(MemoApplication.MEMO_GROUP_NAME, new SaveCallback() {
