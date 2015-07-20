@@ -96,6 +96,7 @@ public class ListMemoActivity extends Activity {
 
     @Override
     protected void onResume() {
+
         super.onResume();
 
         // Logs 'install' and 'app activate' App Events.
