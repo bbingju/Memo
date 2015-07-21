@@ -1,15 +1,16 @@
 package com.bbingju.mymemo;
 
 import android.app.Activity;
-import android.app.ListActivity;
 import android.content.Context;
 import android.content.Intent;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.ContextMenu;
 import android.view.LayoutInflater;
 import android.view.Menu;
+import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
@@ -75,6 +76,7 @@ public class ListMemoActivity extends Activity {
 
         ListView memoListView = (ListView) findViewById(R.id.memo_list_view);
         memoListView.setAdapter(memoListAdapter);
+        registerForContextMenu(memoListView);
 
         memoListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
@@ -153,12 +155,13 @@ public class ListMemoActivity extends Activity {
     private void loadFromParse() {
         ParseQuery<Memo> query = Memo.getQuery();
         query.whereEqualTo("author", currentUser);
-        query.findInBackground(new FindCallback<Memo>() {
-                                   @Override
-                                   public void done(List<Memo> list, ParseException e) {
-                                       if (e == null) {
-                                           ParseObject.pinAllInBackground(list,
-                                                   new SaveCallback() {
+        query.findInBackground(
+                new FindCallback<Memo>() {
+                    @Override
+                    public void done(List<Memo> list, ParseException e) {
+                        if (e == null) {
+                            ParseObject.pinAllInBackground(list,
+                                    new SaveCallback() {
                                                        @Override
                                                        public void done(ParseException e) {
                                                            if (e == null) {
@@ -179,9 +182,45 @@ public class ListMemoActivity extends Activity {
     }
 
     @Override
+    public void onCreateContextMenu(ContextMenu menu, View v,
+                                    ContextMenu.ContextMenuInfo menuInfo) {
+        super.onCreateContextMenu(menu, v, menuInfo);
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.context_menu, menu);
+    }
+
+    @Override
+    public boolean onContextItemSelected(MenuItem item) {
+        AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) item.getMenuInfo();
+        switch (item.getItemId()) {
+
+            case R.id.delete:
+                memoListAdapter.getItem(info.position).deleteEventually();
+                loadFromParse();
+                return true;
+
+            case R.id.edit:
+                openEditView(memoListAdapter.getItem(info.position));
+                return true;
+
+            default:
+                return super.onContextItemSelected(item);
+        }
+    }
+
+    @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_list_memo, menu);
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.menu_list_memo, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        super.onPrepareOptionsMenu(menu);
+        boolean realUser = !ParseAnonymousUtils.isLinked(currentUser);
+        menu.findItem(R.id.action_login).setVisible(!realUser);
+        menu.findItem(R.id.action_logout).setVisible(realUser);
         return true;
     }
 
@@ -190,44 +229,36 @@ public class ListMemoActivity extends Activity {
         // Handle action bar item clicks here. The action bar will
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
+        switch (item.getItemId()) {
+            case R.id.action_new:
+                if (currentUser != null) {
+                    startActivityForResult(new Intent(this, EditMemoActivity.class),
+                            EDIT_REQUEST_CODE);
+                }
+                return true;
 
-        if (id == R.id.action_new) {
-            if (currentUser != null) {
-                startActivityForResult(new Intent(this, EditMemoActivity.class),
-                        EDIT_REQUEST_CODE);
-            }
+            case R.id.action_sync:
+                syncMemosToParse();
+                return true;
+
+            case R.id.action_login:
+                ParseLoginBuilder builder = new ParseLoginBuilder(this);
+                startActivityForResult(builder.build(), LOGIN_REQUEST_CODE);
+                return true;
+
+            case R.id.action_logout:
+                ParseUser.logOut();
+                ParseAnonymousUtils.logIn(null);
+                currentUser = ParseUser.getCurrentUser();
+
+                updateLoggedInfo();
+                memoListAdapter.clear();
+                ParseObject.unpinAllInBackground(MemoApplication.MEMO_GROUP_NAME);
+                return true;
+
+            default:
+                return super.onOptionsItemSelected(item);
         }
-
-        if (id == R.id.action_sync) {
-            syncMemosToParse();
-        }
-
-        if (id == R.id.action_login) {
-            ParseLoginBuilder builder = new ParseLoginBuilder(this);
-            startActivityForResult(builder.build(), LOGIN_REQUEST_CODE);
-        }
-
-        if (id == R.id.action_logout) {
-            ParseUser.logOut();
-            ParseAnonymousUtils.logIn(null);
-            currentUser = ParseUser.getCurrentUser();
-
-            updateLoggedInfo();
-            memoListAdapter.clear();
-            ParseObject.unpinAllInBackground(MemoApplication.MEMO_GROUP_NAME);
-        }
-
-        return super.onOptionsItemSelected(item);
-    }
-
-    @Override
-    public boolean onPrepareOptionsMenu(Menu menu) {
-        super.onPrepareOptionsMenu(menu);
-        boolean realUser = !ParseAnonymousUtils.isLinked(ParseUser.getCurrentUser());
-        menu.findItem(R.id.action_login).setVisible(!realUser);
-        menu.findItem(R.id.action_logout).setVisible(realUser);
-        return true;
     }
 
     private void syncMemosToParse() {
