@@ -152,33 +152,32 @@ public class ListMemoActivity extends Activity {
         }
     }
 
+    private class FindCallbackImplForLoad<T extends Memo> implements FindCallback<T> {
+
+        @Override
+        public void done(List<T> list, ParseException e) {
+            if (e == null) {
+                ParseObject.pinAllInBackground(list, new SaveCallback() {
+
+                    @Override
+                    public void done(ParseException e) {
+                        if (e == null) {
+                            if (!isFinishing()) {
+                                memoListAdapter.loadObjects();
+                            } else {
+                                Log.i("ListMemoActivity", "Error pinning memos: " + e.getMessage());
+                            }
+                        }
+                    }
+                });
+            }
+        }
+    }
+
     private void loadFromParse() {
         ParseQuery<Memo> query = Memo.getQuery();
         query.whereEqualTo("author", currentUser);
-        query.findInBackground(
-                new FindCallback<Memo>() {
-                    @Override
-                    public void done(List<Memo> list, ParseException e) {
-                        if (e == null) {
-                            ParseObject.pinAllInBackground(list,
-                                    new SaveCallback() {
-                                                       @Override
-                                                       public void done(ParseException e) {
-                                                           if (e == null) {
-                                                               if (!isFinishing()) {
-                                                                   memoListAdapter.loadObjects();
-                                                               } else {
-                                                                   Log.i("ListMemoActivity",
-                                                                           "Error pinning memos: " +
-                                                                                   e.getMessage());
-                                                               }
-                                                           }
-                                                       }
-                                                   });
-                                       }
-                                   }
-                               }
-        );
+        query.findInBackground(new FindCallbackImplForLoad<>());
     }
 
     @Override
@@ -261,6 +260,34 @@ public class ListMemoActivity extends Activity {
         }
     }
 
+    private class FindCallbackImplForSync<T extends Memo> implements FindCallback<T> {
+
+        @Override
+        public void done(List<T> list, ParseException e) {
+            if (e == null) {
+                for (final Memo memo : list) {
+                    memo.setDraft(false);
+                    memo.saveInBackground(new SaveCallback() {
+                        @Override
+                        public void done(ParseException e) {
+                            if (e == null) {
+                                if (!isFinishing()) {
+                                    memoListAdapter.notifyDataSetChanged();
+                                }
+                            } else {
+                                memo.setDraft(true);
+                            }
+                        }
+                    });
+                }
+            } else {
+                Log.i("ListMemoActivity",
+                        "syncMemosToParse: Error finding pinned memos: "
+                                + e.getMessage());
+            }
+        }
+    }
+
     private void syncMemosToParse() {
         ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo ni = cm.getActiveNetworkInfo();
@@ -269,32 +296,7 @@ public class ListMemoActivity extends Activity {
                 ParseQuery<Memo> query = Memo.getQuery();
                 query.fromPin(MemoApplication.MEMO_GROUP_NAME);
                 query.whereEqualTo("isDraft", true);
-                query.findInBackground(new FindCallback<Memo>() {
-                        @Override
-                            public void done(List<Memo> list, ParseException e) {
-                            if (e == null) {
-                                for (final Memo memo : list) {
-                                    memo.setDraft(false);
-                                    memo.saveInBackground(new SaveCallback() {
-                                            @Override
-                                            public void done(ParseException e) {
-                                                if (e == null) {
-                                                    if (!isFinishing()) {
-                                                        memoListAdapter.notifyDataSetChanged();
-                                                    }
-                                                } else {
-                                                    memo.setDraft(true);
-                                                }
-                                            }
-                                        });
-                                }
-                            } else {
-                                Log.i("ListMemoActivity",
-                                      "syncMemosToParse: Error finding pinned memos: "
-                                      + e.getMessage());
-                            }
-                        }
-                    });
+                query.findInBackground(new FindCallbackImplForSync<>());
             } else {
                 // If we have a network connection but no logged in user, direct
                 // the person to log in or sign up.
@@ -304,10 +306,9 @@ public class ListMemoActivity extends Activity {
         } else {
             // If there is no connection, let the user know the sync didn't
             // happen
-            Toast.makeText(
-                           getApplicationContext(),
-                           "Your device appears to be offline. Some memos may not have been synced to Parse.",
-                           Toast.LENGTH_LONG).show();
+            Toast.makeText(getApplicationContext(),
+                    "Your device appears to be offline. Some memos may not have been synced to Parse.",
+                    Toast.LENGTH_LONG).show();
         }
     }
 
