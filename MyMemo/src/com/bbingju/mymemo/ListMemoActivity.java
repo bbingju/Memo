@@ -236,10 +236,6 @@ public class ListMemoActivity extends Activity {
                 }
                 return true;
 
-            case R.id.action_sync:
-                syncMemosToParse();
-                return true;
-
             case R.id.action_login:
                 ParseLoginBuilder builder = new ParseLoginBuilder(this);
                 startActivityForResult(builder.build(), LOGIN_REQUEST_CODE);
