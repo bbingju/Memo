@@ -1,3 +1,14 @@
+/*
+ * "THE BEER-WARE LICENSE"
+ * 
+ * <pjhwang@gmail.com> wrote this file.  As long as you retain this
+ * notice you can do whatever you want with this stuff. If we meet
+ * some day, and you think this stuff is worth it, you can buy me a
+ * beer in return.
+ *
+ * - Byung Ju Hwang.
+ */
+
 package com.bbingju.mymemo;
 
 import android.app.Activity;
@@ -34,6 +45,19 @@ import com.parse.ui.ParseLoginBuilder;
 
 import java.util.List;
 
+/**
+ * 메모 리스트를 보여주는 activity. 저장된 메모를 리스트 형식으로
+ * 화면에 표시함.
+ * <a href="https://parse.com/docs/android/api/">Parse</a>를 사용하여
+ * 메모를 저장하며 다음과 같은 기능을 가짐.
+ *
+ *  <ol>
+ *  <li>Add/Edit Memo
+ *  <li>Delete Memo
+ *  <li>Log In
+ *  <li>Log Out
+ *  </ol>
+ */
 public class ListMemoActivity extends Activity {
 
     private static final int LOGIN_REQUEST_CODE = 100;
@@ -49,7 +73,10 @@ public class ListMemoActivity extends Activity {
     private ParseUser currentUser;
 
     /**
-     * Called when the activity is first created.
+     * 화면을 구성하는 각종 View를 초기화하고, List에 사용할 Adapter를
+     * 설정하며, 아이템 클릭 시 호출 될 listener를 설정함.
+     *
+     * @param savedInstanceState
      */
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -89,6 +116,10 @@ public class ListMemoActivity extends Activity {
         ParseAnalytics.trackAppOpenedInBackground(getIntent());
     }
 
+    /**
+     * {@link #onCreate}가 실행된 후에 호출되며,
+     * <code>ParseUser</code>를 객체로 현재 사용자를 받아옴.
+     */
     @Override
     protected void onStart() {
         super.onStart();
@@ -96,6 +127,9 @@ public class ListMemoActivity extends Activity {
         currentUser = ParseUser.getCurrentUser();
     }
 
+    /**
+     *
+     */
     @Override
     protected void onResume() {
 
@@ -112,6 +146,9 @@ public class ListMemoActivity extends Activity {
         }
     }
 
+    /**
+     *
+     */
     @Override
     protected void onPause() {
         super.onPause();
@@ -120,6 +157,9 @@ public class ListMemoActivity extends Activity {
         AppEventsLogger.deactivateApp(this);
     }
 
+    /**
+     *
+     */
     private void updateLoggedInfo() {
         if (!ParseAnonymousUtils.isLinked(currentUser)) {
             loggedInInfoView.setText(getString(R.string.logged_in, currentUser.getString("name")));
@@ -128,12 +168,22 @@ public class ListMemoActivity extends Activity {
         }
     }
 
+    /**
+     *
+     */
     private void openEditView(Memo memo) {
         Intent i = new Intent(this, EditMemoActivity.class);
         i.putExtra("ID", memo.getUuidString());
         startActivityForResult(i, EDIT_REQUEST_CODE);
     }
 
+    /**
+     * 다른 activity에서 돌아왔을 때 그 결과 값을 확인하여 적절히 처리함.
+     *
+     * @param requestCode 해당 activity를 호출했을 때 넘긴 code가 다시 넘어옴.
+     * @param resultCode 값이 <code>Activity.RESULT_OK</code> 일 경우에만 값을 처리함.
+     * @param data Intent에 붙어 있는 기타 데이터가 있을 경우 사용함. 여기서는 쓰지 않음.
+     */
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -152,6 +202,9 @@ public class ListMemoActivity extends Activity {
         }
     }
 
+    /**
+     * Inner class. 
+     */
     private class FindCallbackImplForLoad<T extends Memo> implements FindCallback<T> {
 
         @Override
@@ -174,12 +227,18 @@ public class ListMemoActivity extends Activity {
         }
     }
 
+    /**
+     *
+     */
     private void loadFromParse() {
         ParseQuery<Memo> query = Memo.getQuery();
         query.whereEqualTo("author", currentUser);
         query.findInBackground(new FindCallbackImplForLoad<>());
     }
 
+    /**
+     * 특정 리스트 아이템의 context menu dialog를 생성할 때 수행되는 callback 함수.
+     */
     @Override
     public void onCreateContextMenu(ContextMenu menu, View v,
                                     ContextMenu.ContextMenuInfo menuInfo) {
@@ -188,6 +247,9 @@ public class ListMemoActivity extends Activity {
         inflater.inflate(R.menu.context_menu, menu);
     }
 
+    /**
+     * Context menu dialog를 통하여 아이템이 선택되었을 때 수행되는 callback 함수.
+     */
     @Override
     public boolean onContextItemSelected(MenuItem item) {
         AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) item.getMenuInfo();
@@ -207,6 +269,9 @@ public class ListMemoActivity extends Activity {
         }
     }
 
+    /**
+     *
+     */
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
@@ -214,6 +279,9 @@ public class ListMemoActivity extends Activity {
         return true;
     }
 
+    /**
+     *
+     */
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
         super.onPrepareOptionsMenu(menu);
@@ -223,6 +291,9 @@ public class ListMemoActivity extends Activity {
         return true;
     }
 
+    /**
+     *
+     */
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         // Handle action bar item clicks here. The action bar will
@@ -256,6 +327,9 @@ public class ListMemoActivity extends Activity {
         }
     }
 
+    /**
+     * Inner class.
+     */
     private class FindCallbackImplForSync<T extends Memo> implements FindCallback<T> {
 
         @Override
@@ -284,6 +358,9 @@ public class ListMemoActivity extends Activity {
         }
     }
 
+    /**
+     *
+     */
     private void syncMemosToParse() {
         ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo ni = cm.getActiveNetworkInfo();
@@ -308,10 +385,16 @@ public class ListMemoActivity extends Activity {
         }
     }
 
+    /**
+     * Inner class.
+     */
     private static class ViewHolder {
         TextView memoText;
     }
 
+    /**
+     * Inner class.
+     */
     private class MemoListAdapter extends ParseQueryAdapter<Memo> {
 
         public MemoListAdapter(Context context, ParseQueryAdapter.QueryFactory<Memo> queryFactory) {

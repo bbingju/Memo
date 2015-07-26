@@ -1,3 +1,14 @@
+/*
+ * "THE BEER-WARE LICENSE"
+ *
+ * <pjhwang@gmail.com> wrote this file.  As long as you retain this
+ * notice you can do whatever you want with this stuff. If we meet
+ * some day, and you think this stuff is worth it, you can buy me a
+ * beer in return.
+ *
+ * - Byung Ju Hwang.
+ */
+
 package com.bbingju.mymemo;
 
 import android.app.Application;
@@ -9,6 +20,9 @@ import com.parse.ParseFacebookUtils;
 import com.parse.ParseObject;
 import com.parse.ParseUser;
 
+/**
+ * Parse 서비스 등록 수행
+ */
 public class MemoApplication extends Application {
 
     public static final String MEMO_GROUP_NAME = "ALL_MEMOS";
@@ -17,6 +31,7 @@ public class MemoApplication extends Application {
     public void onCreate() {
         super.onCreate();
 
+        // Register the data model to ParseObject.
         ParseObject.registerSubclass(Memo.class);
 
         // Initialize Crash Reporting.
@@ -27,11 +42,7 @@ public class MemoApplication extends Application {
 
         Parse.setLogLevel(Parse.LOG_LEVEL_DEBUG);
 
-        // Add your initialization code here
-        Parse.initialize(this,
-                "W8byMB6pZqbWaiC0WlyVcIPOWBSeDTG48grCzJMo",
-                "NMa4pYUmY1R33W82RKFmXtHnWGQTyIpUOT9cUbyu");
-
+        Parse.initialize(this);
         ParseFacebookUtils.initialize(this);
 
         ParseUser.enableAutomaticUser();
